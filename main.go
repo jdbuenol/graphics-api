@@ -12,7 +12,7 @@ func main() {
 	r := mux.NewRouter()
 	routes.RegisterRoutes(r)
 	log.Println("Server started, running on port 8080.")
-	if err := http.ListenAndServe(":8081", r); err != nil {
+	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatal("Server failed to start: ", err.Error())
 	}
 }

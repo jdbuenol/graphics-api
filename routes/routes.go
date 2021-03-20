@@ -38,8 +38,8 @@ func processImage(w http.ResponseWriter, r *http.Request, k *kernels.Kernel) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	file, _, err := r.FormFile("image") //get file
-	defer file.Close()                  //close the file when we finish
+	file, _, err := r.FormFile("image")
+	defer file.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
