@@ -1,67 +1,95 @@
 package routes
 
 import (
-	"encoding/json"
 	"image"
+	"image/jpeg"
+	"image/png"
 	"io"
+	"mime"
 	"net/http"
 
-	processing "github.com/drew138/go-graphics/processing"
-	kernels "github.com/drew138/go-graphics/processing/kernels"
+	"github.com/drew138/go-graphics/processing"
+	"github.com/drew138/go-graphics/processing/formats"
+	"github.com/drew138/go-graphics/processing/kernels"
 	"github.com/gorilla/mux"
 )
 
-type handler func(http.ResponseWriter, *http.Request)
+func enforceMultipartFormDataHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentType := r.Header.Get("Content-Type")
+		if contentType != "multipart/form-data" {
+			mediatype, _, err := mime.ParseMediaType(contentType)
+			if err != nil {
+				http.Error(w, "Malformed Content-Type header", http.StatusBadRequest)
+				return
+			}
+			if mediatype != "multipart/form-data" {
+				http.Error(w, "Content-Type header must be multipart/form-data", http.StatusUnsupportedMediaType)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
-func checkBody(f handler) handler {
-	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := r.GetBody()
-		if err != nil {
-
-		}
-		img := io.Reader(body)
-		i, format, err := image.Decode(img)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"Error": "An error occurred while decoding the image"})
-			w.WriteHeader(400)
-			return
-		}
-		// b := r.Body()
-		if true {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"Error": "An image was not provided, or its format is not currently supported"})
-			w.WriteHeader(400)
-			return
-		}
-		f(w, r)
+func processImage(w http.ResponseWriter, r *http.Request, k *kernels.Kernel) {
+	err := r.ParseMultipartForm(32 << 20)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	file, _, err := r.FormFile("image") //get file
+	defer file.Close()                  //close the file when we finish
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	img := io.Reader(file)
+	i, format, err := image.Decode(img)
+	if !formats.IsSupportedFormat(format) {
+		http.Error(w, "Unsupported image format", http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	outputImg := processing.TransformImage(i, k)
+	switch format {
+	case "png":
+		png.Encode(w, outputImg)
+	case "jpg":
+		jpeg.Encode(w, outputImg, nil)
+	case "jpeg":
+		jpeg.Encode(w, outputImg, nil)
 	}
 }
 
-func RegisterRoutes(r *mux.Router) {
-	r.HandleFunc("/api/v1/leaderboard", checkBody(func(w http.ResponseWriter, r *http.Request) {
-		processing.TransformImage(i, kernels.BoxBlur)
-	})).Methods("GET")
-}
-
-// ChangePassword - change password for a given user
-
 func SharpenEndpoint(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
+	processImage(w, r, &kernels.Sharpen)
 }
 
 func EdgeDetectionEndpoint(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
+	processImage(w, r, &kernels.EdgeDetection)
 }
 
 func GaussianBlurEndpoint(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	processImage(w, r, &kernels.GaussianBlur)
 
 }
 
-func CustomKernelEndpoint(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func BoxBlurEndpoint(w http.ResponseWriter, r *http.Request) {
+	processImage(w, r, &kernels.BoxBlur)
+}
 
+func CustomKernelEndpoint(w http.ResponseWriter, r *http.Request) {
+	customKernel := kernels.Kernel{}
+	processImage(w, r, &customKernel)
+}
+
+func RegisterRoutes(r *mux.Router) {
+	r.Handle("/sharpen", enforceMultipartFormDataHandler(http.HandlerFunc(SharpenEndpoint))).Methods("GET")
+	r.Handle("/edgedetection", enforceMultipartFormDataHandler(http.HandlerFunc(EdgeDetectionEndpoint))).Methods("GET")
+	r.Handle("/gaussianblur", enforceMultipartFormDataHandler(http.HandlerFunc(GaussianBlurEndpoint))).Methods("GET")
+	r.Handle("/boxblur", enforceMultipartFormDataHandler(http.HandlerFunc(BoxBlurEndpoint))).Methods("GET")
+	r.Handle("/custom", enforceMultipartFormDataHandler(http.HandlerFunc(CustomKernelEndpoint))).Methods("GET")
 }
