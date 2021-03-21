@@ -18,7 +18,7 @@ func main() {
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		Cache:      autocert.DirCache("cert-cache"),
-		HostPolicy: autocert.HostWhitelist("kappa.serv.brendanr.net"),
+		HostPolicy: autocert.HostWhitelist("3.128.168.36"),
 	}
 
 	server := &http.Server{
