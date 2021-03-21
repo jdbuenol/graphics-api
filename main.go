@@ -18,7 +18,7 @@ func main() {
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		Cache:      autocert.DirCache("cert-cache"),
-		HostPolicy: autocert.HostWhitelist("3.128.168.36"),
+		HostPolicy: autocert.HostWhitelist("ec2-3-128-168-36.us-east-2.compute.amazonaws.com"),
 	}
 
 	server := &http.Server{
