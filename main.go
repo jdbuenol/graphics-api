@@ -10,7 +10,6 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-// https://medium.com/rungo/secure-https-servers-in-go-a783008b36da
 func main() {
 	r := mux.NewRouter()
 	routes.RegisterRoutes(r)
@@ -18,7 +17,7 @@ func main() {
 	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		Cache:      autocert.DirCache("cert-cache"),
-		HostPolicy: autocert.HostWhitelist("drew-graphics.site"),
+		HostPolicy: autocert.HostWhitelist("drew-graphics.site", "www.drew-graphics.site"),
 	}
 
 	server := &http.Server{
@@ -33,4 +32,5 @@ func main() {
 	if err := server.ListenAndServeTLS("", ""); err != nil {
 		log.Fatal("Server failed to start: ", err.Error())
 	}
+
 }
