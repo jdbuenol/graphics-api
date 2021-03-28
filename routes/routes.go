@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"encoding/json"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -64,32 +65,40 @@ func processImage(w http.ResponseWriter, r *http.Request, k *kernels.Kernel) {
 	}
 }
 
-func SharpenEndpoint(w http.ResponseWriter, r *http.Request) {
+func sharpenEndpoint(w http.ResponseWriter, r *http.Request) {
 	processImage(w, r, &kernels.Sharpen)
 }
 
-func EdgeDetectionEndpoint(w http.ResponseWriter, r *http.Request) {
+func edgeDetectionEndpoint(w http.ResponseWriter, r *http.Request) {
 	processImage(w, r, &kernels.EdgeDetection)
 }
 
-func GaussianBlurEndpoint(w http.ResponseWriter, r *http.Request) {
+func gaussianBlurEndpoint(w http.ResponseWriter, r *http.Request) {
 	processImage(w, r, &kernels.GaussianBlur)
 
 }
 
-func BoxBlurEndpoint(w http.ResponseWriter, r *http.Request) {
+func boxBlurEndpoint(w http.ResponseWriter, r *http.Request) {
 	processImage(w, r, &kernels.BoxBlur)
 }
 
-func CustomKernelEndpoint(w http.ResponseWriter, r *http.Request) {
+func customKernelEndpoint(w http.ResponseWriter, r *http.Request) {
+
 	customKernel := kernels.Kernel{}
+	vals := r.FormValue("kernel")
+	err := json.Unmarshal([]byte(vals), &customKernel.Kernel)
+	if err != nil {
+		http.Error(w, "Error while parsing kernel", http.StatusInternalServerError)
+		return
+	}
+
 	processImage(w, r, &customKernel)
 }
 
 func RegisterRoutes(r *mux.Router) {
-	r.Handle("/sharpen", enforceMultipartFormDataHandler(http.HandlerFunc(SharpenEndpoint))).Methods("GET")
-	r.Handle("/edgedetection", enforceMultipartFormDataHandler(http.HandlerFunc(EdgeDetectionEndpoint))).Methods("GET")
-	r.Handle("/gaussianblur", enforceMultipartFormDataHandler(http.HandlerFunc(GaussianBlurEndpoint))).Methods("GET")
-	r.Handle("/boxblur", enforceMultipartFormDataHandler(http.HandlerFunc(BoxBlurEndpoint))).Methods("GET")
-	r.Handle("/custom", enforceMultipartFormDataHandler(http.HandlerFunc(CustomKernelEndpoint))).Methods("GET")
+	r.Handle("/api/sharpen", enforceMultipartFormDataHandler(http.HandlerFunc(sharpenEndpoint))).Methods("GET")
+	r.Handle("/api/edgedetection", enforceMultipartFormDataHandler(http.HandlerFunc(edgeDetectionEndpoint))).Methods("GET")
+	r.Handle("/api/gaussianblur", enforceMultipartFormDataHandler(http.HandlerFunc(gaussianBlurEndpoint))).Methods("GET")
+	r.Handle("/api/boxblur", enforceMultipartFormDataHandler(http.HandlerFunc(boxBlurEndpoint))).Methods("GET")
+	r.Handle("/api/custom", enforceMultipartFormDataHandler(http.HandlerFunc(customKernelEndpoint))).Methods("GET")
 }
