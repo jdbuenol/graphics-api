@@ -4,3 +4,5 @@ https://medium.com/jspoint/a-brief-overview-of-the-tcp-ip-model-ssl-tls-https-pr
 https://intellipaat.com/community/240/how-do-i-expose-multiple-port-with-docker
 https://intellipaat.com/community/240/how-do-i-expose-multiple-port-with-docker
 https://forum.golangbridge.org/t/need-help-with-autocert-package/5432
+https://semaphoreci.com/community/tutorials/building-and-testing-a-rest-api-in-go-with-gorilla-mux-and-postgresql
+https://medium.com/rungo/secure-https-servers-in-go-a783008b36da
