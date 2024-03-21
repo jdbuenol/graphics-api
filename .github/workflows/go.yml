@@ -1,0 +1,66 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go CI
+
+on:
+  push:
+    branches: [ "feature/**" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+      - name: Test
+        run: |
+            go test ./... -coverprofile coverage.out -covermode count
+            go tool cover -func coverage.out
+
+      - name: Meets coverage
+        env:
+            TESTCOVERAGE_THRESHOLD: 20
+        run: |
+              echo "Threshold             : $TESTCOVERAGE_THRESHOLD %"
+              totalCoverage=`go tool cover -func=coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'`
+              echo "Current test coverage : $totalCoverage %"
+              if (( $(echo "$totalCoverage $TESTCOVERAGE_THRESHOLD" | awk '{print ($1 > $2)}') )); then
+                  echo "OK"
+              else
+                  echo "Current test coverage is below threshold. Please add more unit tests or adjust threshold to a lower value."
+                  echo "Failed"
+                  exit 1
+              fi
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+
+    - name: Build
+      run: go build -v ./...
+    
+    - name: staticcheck
+      uses: dominikh/staticcheck-action@v1.2.0
+      continue-on-error: true
+      with:
+        version: "2022.1.3"
+      
+    - name: Run Gosec Security Scanner
+      uses: securego/gosec@master
+      with:
+        # we let the report trigger content trigger a failure using the GitHub Security features.
+        args: '-no-fail ./...'
