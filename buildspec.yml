@@ -1,0 +1,20 @@
+version: 0.2
+
+env:
+  variables:
+    GO_VERSION: 1.21.6
+phases:
+  install:
+    commands:
+      - go mod download
+  pre_build:
+    commands:
+      - echo Start pre_build...
+  build:
+    commands:
+      - echo Start build...
+      - cd $CODEBUILD_SRC_DIR && go build
+  post_build:
+    commands:
+      - echo Start post_build...
+      - aws s3 cp $CODEBUILD_SRC_DIR/main s3://bucket-name/
