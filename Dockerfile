@@ -1,29 +1,13 @@
-FROM golang:alpine AS builder
+FROM golang:1.22
 
-RUN apk add --no-cache ca-certificates git
+WORKDIR /app 
 
-WORKDIR /src
-
-COPY ./go.mod ./go.sum ./
+COPY . .
 
 RUN go mod download
 
-COPY ./ ./
+EXPOSE 8080
 
-RUN CGO_ENABLED=0 go build \
-    -installsuffix 'static' \
-    -o /app .
+RUN go build -o main ./cmd/server/main.go
 
-FROM scratch AS final
-
-COPY --from=builder /app /app
-
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-EXPOSE 443
-
-EXPOSE 80
-
-VOLUME ["/cert-cache"]
-
-ENTRYPOINT ["/app"]
+CMD ["./main"]
